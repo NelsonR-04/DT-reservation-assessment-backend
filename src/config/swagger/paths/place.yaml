@@ -1,0 +1,159 @@
+paths:
+  /lugares:
+    get:
+      tags:
+      - Lugares
+      summary: Listar todos los lugares
+      description: Obtiene una lista de todos los lugares disponibles
+      responses:
+        '200':
+          description: Lista de lugares obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Place'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+      - Lugares
+      summary: Crear un nuevo lugar
+      description: Crea un nuevo lugar en el sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceInput'
+            examples:
+              example1:
+                summary: Ejemplo de lugar
+                value:
+                  name: "Edificio Central"
+                  location: "Av. Principal 123, Ciudad"
+      responses:
+        '201':
+          description: Lugar creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /lugares/{id}:
+    get:
+      tags:
+      - Lugares
+      summary: Obtener un lugar por ID
+      description: Obtiene los detalles de un lugar específico
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del lugar
+        example: 1
+      responses:
+        '200':
+          description: Lugar encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+      - Lugares
+      summary: Actualizar un lugar
+      description: Actualiza la información de un lugar existente
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del lugar
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceInput'
+            examples:
+              example1:
+                summary: Actualizar lugar
+                value:
+                  name: "Edificio Central Actualizado"
+                  location: "Av. Principal 456, Ciudad"
+      responses:
+        '200':
+          description: Lugar actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+      - Lugares
+      summary: Eliminar un lugar
+      description: Elimina un lugar del sistema
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del lugar
+        example: 1
+      responses:
+        '200':
+          description: Lugar eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Lugar eliminado exitosamente"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

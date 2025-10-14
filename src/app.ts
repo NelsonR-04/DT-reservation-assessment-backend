@@ -5,6 +5,7 @@ import express, { Express, Request, Response } from 'express';
 import morgan from 'morgan';
 import config from './config/config';
 import logger, { morganStream } from './config/logger';
+import { setupSwagger } from './config/swagger/swagger.setup';
 import apiKeyAuth from './middleware/apiKeyAuth';
 import placeRoutes from './routes/placeRoutes';
 import reservationRoutes from './routes/reservationRoutes';
@@ -24,6 +25,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // HTTP request logging with Morgan
 app.use(morgan('combined', { stream: morganStream }));
+
+// Setup Swagger documentation (before auth middleware)
+setupSwagger(app);
 
 app.get('/health', async (req: Request, res: Response) => {
   let dbStatus = 'disconnected';

@@ -1,0 +1,53 @@
+components:
+  schemas:
+    Place:
+      type: object
+      required:
+      - name
+      - location
+      properties:
+        id:
+          type: integer
+          description: Identificador único del lugar
+          example: 1
+        name:
+          type: string
+          description: Nombre del lugar
+          example: "Edificio Central"
+        location:
+          type: string
+          description: Ubicación del lugar
+          example: "Av. Principal 123, Ciudad"
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+
+    PlaceInput:
+      type: object
+      required:
+      - name
+      - location
+      properties:
+        name:
+          type: string
+          description: Nombre del lugar
+          example: "Edificio Central"
+        location:
+          type: string
+          description: Ubicación del lugar
+          example: "Av. Principal 123, Ciudad"
+
+    PlaceWithSpaces:
+      allOf:
+      - $ref: '#/components/schemas/Place'
+      - type: object
+        properties:
+          spaces:
+            type: array
+            items:
+              $ref: '#/components/schemas/Space'

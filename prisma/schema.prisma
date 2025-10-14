@@ -11,6 +11,12 @@ generator seed {
   output   = "../node_modules/.prisma/client"
 }
 
+// Generate JSON Schema for Swagger documentation
+generator jsonSchema {
+  provider = "prisma-json-schema-generator"
+  output   = "../src/config/swagger/generated"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")

@@ -1,0 +1,172 @@
+paths:
+  /espacios:
+    get:
+      tags:
+      - Espacios
+      summary: Listar todos los espacios
+      description: Obtiene una lista de todos los espacios disponibles para reserva
+      responses:
+        '200':
+          description: Lista de espacios obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Space'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+      - Espacios
+      summary: Crear un nuevo espacio
+      description: Crea un nuevo espacio en el sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceInput'
+            examples:
+              example1:
+                summary: Sala de reuniones
+                value:
+                  placeId: 1
+                  name: "Sala de Reuniones A"
+                  reference: "SR-A-01"
+                  capacity: 10
+                  description: "Sala equipada con proyector y pizarra"
+              example2:
+                summary: Espacio de coworking
+                value:
+                  placeId: 1
+                  name: "Área de Coworking"
+                  capacity: 50
+                  description: "Espacio abierto con escritorios compartidos"
+      responses:
+        '201':
+          description: Espacio creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /espacios/{id}:
+    get:
+      tags:
+      - Espacios
+      summary: Obtener un espacio por ID
+      description: Obtiene los detalles de un espacio específico
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del espacio
+        example: 1
+      responses:
+        '200':
+          description: Espacio encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+      - Espacios
+      summary: Actualizar un espacio
+      description: Actualiza la información de un espacio existente
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del espacio
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceInput'
+            examples:
+              example1:
+                summary: Actualizar espacio
+                value:
+                  placeId: 1
+                  name: "Sala de Reuniones A - Actualizada"
+                  reference: "SR-A-01"
+                  capacity: 12
+                  description: "Sala renovada con equipo audiovisual moderno"
+      responses:
+        '200':
+          description: Espacio actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Space'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+      - Espacios
+      summary: Eliminar un espacio
+      description: Elimina un espacio del sistema
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID del espacio
+        example: 1
+      responses:
+        '200':
+          description: Espacio eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Espacio eliminado exitosamente"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

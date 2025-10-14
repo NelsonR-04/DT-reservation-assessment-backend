@@ -1,0 +1,86 @@
+components:
+  schemas:
+    Space:
+      type: object
+      required:
+      - placeId
+      - name
+      - capacity
+      properties:
+        id:
+          type: integer
+          description: Identificador único del espacio
+          example: 1
+        placeId:
+          type: integer
+          description: ID del lugar al que pertenece
+          example: 1
+        name:
+          type: string
+          description: Nombre del espacio
+          example: "Sala de Reuniones A"
+        reference:
+          type: string
+          nullable: true
+          description: Referencia o código del espacio
+          example: "SR-A-01"
+        capacity:
+          type: integer
+          description: Capacidad máxima de personas
+          example: 10
+        description:
+          type: string
+          nullable: true
+          description: Descripción del espacio
+          example: "Sala equipada con proyector y pizarra"
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+
+    SpaceInput:
+      type: object
+      required:
+      - placeId
+      - name
+      - capacity
+      properties:
+        placeId:
+          type: integer
+          description: ID del lugar al que pertenece
+          example: 1
+        name:
+          type: string
+          description: Nombre del espacio
+          example: "Sala de Reuniones A"
+        reference:
+          type: string
+          nullable: true
+          description: Referencia o código del espacio
+          example: "SR-A-01"
+        capacity:
+          type: integer
+          description: Capacidad máxima de personas
+          minimum: 1
+          example: 10
+        description:
+          type: string
+          nullable: true
+          description: Descripción del espacio
+          example: "Sala equipada con proyector y pizarra"
+
+    SpaceWithRelations:
+      allOf:
+      - $ref: '#/components/schemas/Space'
+      - type: object
+        properties:
+          place:
+            $ref: '#/components/schemas/Place'
+          reservations:
+            type: array
+            items:
+              $ref: '#/components/schemas/Reservation'

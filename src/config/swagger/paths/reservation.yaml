@@ -1,0 +1,222 @@
+paths:
+  /reservas:
+    get:
+      tags:
+      - Reservas
+      summary: Listar todas las reservas
+      description: |
+        Obtiene una lista de todas las reservas con soporte para paginación.
+
+        **Reglas de negocio aplicadas:**
+        - Las reservas se devuelven ordenadas por fecha de creación (más recientes primero)
+        - Soporte para paginación mediante query parameters
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Número de página
+        example: 1
+      - in: query
+        name: limit
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Cantidad de registros por página
+        example: 10
+      - in: query
+        name: clientEmail
+        schema:
+          type: string
+          format: email
+        description: Filtrar por email del cliente
+        example: "cliente@example.com"
+      responses:
+        '200':
+          description: Lista de reservas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReservations'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+      - Reservas
+      summary: Crear una nueva reserva
+      description: |
+        Crea una nueva reserva en el sistema.
+
+        **Reglas de negocio validadas:**
+        - No se permiten conflictos de horario para el mismo espacio
+        - Máximo 3 reservas activas por cliente por semana
+        - La hora de fin debe ser posterior a la hora de inicio
+        - El espacio debe existir y estar disponible
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationInput'
+            examples:
+              example1:
+                summary: Reserva de sala de reuniones
+                value:
+                  spaceId: 1
+                  placeId: 1
+                  clientEmail: "cliente@example.com"
+                  reservationDate: "2024-01-15T00:00:00.000Z"
+                  startTime: "2024-01-15T09:00:00.000Z"
+                  endTime: "2024-01-15T11:00:00.000Z"
+              example2:
+                summary: Reserva de espacio de coworking
+                value:
+                  spaceId: 2
+                  clientEmail: "usuario@example.com"
+                  reservationDate: "2024-01-20T00:00:00.000Z"
+                  startTime: "2024-01-20T14:00:00.000Z"
+                  endTime: "2024-01-20T18:00:00.000Z"
+      responses:
+        '201':
+          description: Reserva creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /reservas/{id}:
+    get:
+      tags:
+      - Reservas
+      summary: Obtener una reserva por ID
+      description: Obtiene los detalles de una reserva específica
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID de la reserva
+        example: 1
+      responses:
+        '200':
+          description: Reserva encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+      - Reservas
+      summary: Actualizar una reserva
+      description: |
+        Actualiza la información de una reserva existente.
+
+        **Reglas de negocio validadas:**
+        - No se permiten conflictos de horario para el mismo espacio
+        - Máximo 3 reservas activas por cliente por semana
+        - La hora de fin debe ser posterior a la hora de inicio
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID de la reserva
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationInput'
+            examples:
+              example1:
+                summary: Actualizar horario de reserva
+                value:
+                  spaceId: 1
+                  placeId: 1
+                  clientEmail: "cliente@example.com"
+                  reservationDate: "2024-01-15T00:00:00.000Z"
+                  startTime: "2024-01-15T10:00:00.000Z"
+                  endTime: "2024-01-15T12:00:00.000Z"
+      responses:
+        '200':
+          description: Reserva actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+      - Reservas
+      summary: Eliminar una reserva
+      description: Elimina una reserva del sistema
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: ID de la reserva
+        example: 1
+      responses:
+        '200':
+          description: Reserva eliminada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Reserva eliminada exitosamente"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

@@ -1,0 +1,128 @@
+components:
+  schemas:
+    Reservation:
+      type: object
+      required:
+      - spaceId
+      - clientEmail
+      - reservationDate
+      - startTime
+      - endTime
+      properties:
+        id:
+          type: integer
+          description: Identificador único de la reserva
+          example: 1
+        spaceId:
+          type: integer
+          description: ID del espacio reservado
+          example: 1
+        placeId:
+          type: integer
+          nullable: true
+          description: ID del lugar (opcional)
+          example: 1
+        clientEmail:
+          type: string
+          format: email
+          description: Email del cliente
+          example: "cliente@example.com"
+        reservationDate:
+          type: string
+          format: date-time
+          description: Fecha de la reserva
+          example: "2024-01-15T00:00:00.000Z"
+        startTime:
+          type: string
+          format: date-time
+          description: Hora de inicio de la reserva
+          example: "2024-01-15T09:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          description: Hora de fin de la reserva
+          example: "2024-01-15T11:00:00.000Z"
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+
+    ReservationInput:
+      type: object
+      required:
+      - spaceId
+      - clientEmail
+      - reservationDate
+      - startTime
+      - endTime
+      properties:
+        spaceId:
+          type: integer
+          description: ID del espacio a reservar
+          example: 1
+        placeId:
+          type: integer
+          nullable: true
+          description: ID del lugar (opcional)
+          example: 1
+        clientEmail:
+          type: string
+          format: email
+          description: Email del cliente
+          example: "cliente@example.com"
+        reservationDate:
+          type: string
+          format: date-time
+          description: Fecha de la reserva
+          example: "2024-01-15T00:00:00.000Z"
+        startTime:
+          type: string
+          format: date-time
+          description: Hora de inicio de la reserva
+          example: "2024-01-15T09:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          description: Hora de fin de la reserva
+          example: "2024-01-15T11:00:00.000Z"
+
+    ReservationWithRelations:
+      allOf:
+      - $ref: '#/components/schemas/Reservation'
+      - type: object
+        properties:
+          space:
+            $ref: '#/components/schemas/Space'
+          place:
+            $ref: '#/components/schemas/Place'
+
+    PaginatedReservations:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              description: Total de registros
+              example: 50
+            page:
+              type: integer
+              description: Página actual
+              example: 1
+            limit:
+              type: integer
+              description: Registros por página
+              example: 10
+            totalPages:
+              type: integer
+              description: Total de páginas
+              example: 5
