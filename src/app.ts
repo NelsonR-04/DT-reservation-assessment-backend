@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import express, { Express, Request, Response } from 'express';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import morgan from 'morgan';
 import config from './config/config';
 import logger, { morganStream } from './config/logger';
@@ -57,8 +57,9 @@ app.use('/espacios', spaceRoutes);
 app.use('/lugares', placeRoutes);
 app.use('/reservas', reservationRoutes);
 
-// middleware
-app.use((err: Error, req: Request, res: Response) => {
+// Error handling middleware
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error('Unhandled error:', {
     error: err.message,
     stack: err.stack,

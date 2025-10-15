@@ -1,14 +1,22 @@
 import { Request, Response } from 'express';
 import prisma from '../models';
+import { HTTP_STATUS } from '../utils/httpStatus';
+import { ERROR_CODES } from '../utils/errorCodes';
+import { sendError, sendSuccess } from '../utils/apiResponse';
 
 // Obtener todos los lugares
 export const getAllPlaces = async (req: Request, res: Response) => {
   try {
     const places = await prisma.place.findMany();
-    res.status(200).json(places);
+    return sendSuccess(res, places);
   } catch (error) {
     console.error('Error fetching places:', error);
-    res.status(500).json({ error: 'Failed to fetch places' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch places',
+      ERROR_CODES.PLACE_FETCH_FAILED
+    );
   }
 };
 
@@ -22,13 +30,18 @@ export const getPlaceById = async (req: Request, res: Response) => {
     });
 
     if (!place) {
-      return res.status(404).json({ error: 'Place not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Place not found', ERROR_CODES.PLACE_NOT_FOUND);
     }
 
-    res.status(200).json(place);
+    return sendSuccess(res, place);
   } catch (error) {
     console.error('Error fetching place:', error);
-    res.status(500).json({ error: 'Failed to fetch place' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch place',
+      ERROR_CODES.PLACE_FETCH_FAILED
+    );
   }
 };
 
@@ -38,7 +51,12 @@ export const createPlace = async (req: Request, res: Response) => {
     const { name, location } = req.body;
 
     if (!name || !location) {
-      return res.status(400).json({ error: 'Name and location are required' });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        'Name and location are required',
+        ERROR_CODES.PLACE_MISSING_FIELDS
+      );
     }
 
     const newPlace = await prisma.place.create({
@@ -48,10 +66,15 @@ export const createPlace = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(newPlace);
+    return sendSuccess(res, newPlace, HTTP_STATUS.CREATED);
   } catch (error) {
     console.error('Error creating place:', error);
-    res.status(500).json({ error: 'Failed to create place' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to create place',
+      ERROR_CODES.PLACE_CREATE_FAILED
+    );
   }
 };
 
@@ -69,10 +92,15 @@ export const updatePlace = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(updatedPlace);
+    return sendSuccess(res, updatedPlace);
   } catch (error) {
     console.error('Error updating place:', error);
-    res.status(500).json({ error: 'Failed to update place' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to update place',
+      ERROR_CODES.PLACE_UPDATE_FAILED
+    );
   }
 };
 
@@ -81,23 +109,26 @@ export const deletePlace = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Verificar si el lugar existe
     const place = await prisma.place.findUnique({
       where: { id: parseInt(id) },
     });
 
     if (!place) {
-      return res.status(404).json({ error: 'Place not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Place not found', ERROR_CODES.PLACE_NOT_FOUND);
     }
 
-    // Eliminar el lugar
     await prisma.place.delete({
       where: { id: parseInt(id) },
     });
 
-    res.status(204).send();
+    return res.status(HTTP_STATUS.NO_CONTENT).send();
   } catch (error) {
     console.error('Error deleting place:', error);
-    res.status(500).json({ error: 'Failed to delete place' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to delete place',
+      ERROR_CODES.PLACE_DELETE_FAILED
+    );
   }
 };

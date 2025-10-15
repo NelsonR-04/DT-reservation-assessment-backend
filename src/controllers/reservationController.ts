@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import config from '../config/config';
 import prisma from '../models';
+import { HTTP_STATUS } from '../utils/httpStatus';
+import { ERROR_CODES } from '../utils/errorCodes';
+import { sendError, sendSuccess } from '../utils/apiResponse';
 
 // Obtener todas las reservas con paginación
 export const getAllReservations = async (req: Request, res: Response) => {
@@ -9,7 +12,32 @@ export const getAllReservations = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
+    const now = new Date();
+
     const reservations = await prisma.reservation.findMany({
+      where: {
+        OR: [
+          {
+            reservationDate: {
+              gt: now,
+            },
+          },
+          {
+            AND: [
+              {
+                reservationDate: {
+                  gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                },
+              },
+              {
+                endTime: {
+                  gte: now,
+                },
+              },
+            ],
+          },
+        ],
+      },
       skip,
       take: limit,
       include: {
@@ -21,9 +49,33 @@ export const getAllReservations = async (req: Request, res: Response) => {
       },
     });
 
-    const total = await prisma.reservation.count();
+    const total = await prisma.reservation.count({
+      where: {
+        OR: [
+          {
+            reservationDate: {
+              gt: now,
+            },
+          },
+          {
+            AND: [
+              {
+                reservationDate: {
+                  gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+                },
+              },
+              {
+                endTime: {
+                  gte: now,
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
 
-    res.status(200).json({
+    return sendSuccess(res, {
       data: reservations,
       meta: {
         total,
@@ -34,7 +86,12 @@ export const getAllReservations = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching reservations:', error);
-    res.status(500).json({ error: 'Failed to fetch reservations' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch reservations',
+      ERROR_CODES.RESERVATION_FETCH_FAILED
+    );
   }
 };
 
@@ -51,13 +108,23 @@ export const getReservationById = async (req: Request, res: Response) => {
     });
 
     if (!reservation) {
-      return res.status(404).json({ error: 'Reservation not found' });
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        'Reservation not found',
+        ERROR_CODES.RESERVATION_NOT_FOUND
+      );
     }
 
-    res.status(200).json(reservation);
+    return sendSuccess(res, reservation);
   } catch (error) {
     console.error('Error fetching reservation:', error);
-    res.status(500).json({ error: 'Failed to fetch reservation' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch reservation',
+      ERROR_CODES.RESERVATION_FETCH_FAILED
+    );
   }
 };
 
@@ -67,9 +134,12 @@ export const createReservation = async (req: Request, res: Response) => {
     const { spaceId, clientEmail, reservationDate, startTime, endTime } = req.body;
 
     if (!spaceId || !clientEmail || !reservationDate || !startTime || !endTime) {
-      return res.status(400).json({
-        error: 'SpaceId, clientEmail, reservationDate, startTime, and endTime are required',
-      });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        'SpaceId, clientEmail, reservationDate, startTime, and endTime are required',
+        ERROR_CODES.RESERVATION_MISSING_FIELDS
+      );
     }
 
     // Verificar si el espacio existe
@@ -79,7 +149,7 @@ export const createReservation = async (req: Request, res: Response) => {
     });
 
     if (!space) {
-      return res.status(404).json({ error: 'Space not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Space not found', ERROR_CODES.SPACE_NOT_FOUND);
     }
 
     // Parsear fechas
@@ -87,12 +157,14 @@ export const createReservation = async (req: Request, res: Response) => {
     const startTimeObj = new Date(startTime);
     const endTimeObj = new Date(endTime);
 
-    // Validar fechas
     if (endTimeObj <= startTimeObj) {
-      return res.status(400).json({ error: 'End time must be after start time' });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        'End time must be after start time',
+        ERROR_CODES.RESERVATION_INVALID_TIME
+      );
     }
-
-    // Verificar conflictos de horario
     const conflictingReservation = await prisma.reservation.findFirst({
       where: {
         spaceId,
@@ -112,7 +184,12 @@ export const createReservation = async (req: Request, res: Response) => {
     });
 
     if (conflictingReservation) {
-      return res.status(409).json({ error: 'There is a scheduling conflict for this space' });
+      return sendError(
+        res,
+        HTTP_STATUS.CONFLICT,
+        'There is a scheduling conflict for this space',
+        ERROR_CODES.RESERVATION_SCHEDULING_CONFLICT
+      );
     }
 
     // Verificar máximo de reservas por cliente por semana
@@ -135,9 +212,12 @@ export const createReservation = async (req: Request, res: Response) => {
     });
 
     if (clientReservationsThisWeek >= config.reservationRules.maxReservationsPerWeek) {
-      return res.status(400).json({
-        error: `Client has reached the maximum of ${config.reservationRules.maxReservationsPerWeek} reservations per week`,
-      });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        `Client has reached the maximum of ${config.reservationRules.maxReservationsPerWeek} reservations per week`,
+        ERROR_CODES.RESERVATION_MAX_LIMIT_REACHED
+      );
     }
 
     // Crear la reserva
@@ -152,10 +232,15 @@ export const createReservation = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(newReservation);
+    return sendSuccess(res, newReservation, HTTP_STATUS.CREATED);
   } catch (error) {
     console.error('Error creating reservation:', error);
-    res.status(500).json({ error: 'Failed to create reservation' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to create reservation',
+      ERROR_CODES.RESERVATION_CREATE_FAILED
+    );
   }
 };
 
@@ -171,7 +256,12 @@ export const updateReservation = async (req: Request, res: Response) => {
     });
 
     if (!existingReservation) {
-      return res.status(404).json({ error: 'Reservation not found' });
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        'Reservation not found',
+        ERROR_CODES.RESERVATION_NOT_FOUND
+      );
     }
 
     // Si se proporciona spaceId, verificar si el espacio existe
@@ -183,7 +273,12 @@ export const updateReservation = async (req: Request, res: Response) => {
       });
 
       if (!space) {
-        return res.status(404).json({ error: 'Space not found' });
+        return sendError(
+          res,
+          HTTP_STATUS.NOT_FOUND,
+          'Space not found',
+          ERROR_CODES.SPACE_NOT_FOUND
+        );
       }
 
       placeId = space.placeId;
@@ -196,12 +291,14 @@ export const updateReservation = async (req: Request, res: Response) => {
     const startTimeObj = startTime ? new Date(startTime) : existingReservation.startTime;
     const endTimeObj = endTime ? new Date(endTime) : existingReservation.endTime;
 
-    // Validar fechas
     if (endTimeObj <= startTimeObj) {
-      return res.status(400).json({ error: 'End time must be after start time' });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        'End time must be after start time',
+        ERROR_CODES.RESERVATION_INVALID_TIME
+      );
     }
-
-    // Verificar conflictos de horario (excluyendo esta reserva)
     if (spaceId || reservationDate || startTime || endTime) {
       const conflictingReservation = await prisma.reservation.findFirst({
         where: {
@@ -223,7 +320,12 @@ export const updateReservation = async (req: Request, res: Response) => {
       });
 
       if (conflictingReservation) {
-        return res.status(409).json({ error: 'There is a scheduling conflict for this space' });
+        return sendError(
+          res,
+          HTTP_STATUS.CONFLICT,
+          'There is a scheduling conflict for this space',
+          ERROR_CODES.RESERVATION_SCHEDULING_CONFLICT
+        );
       }
     }
 
@@ -240,10 +342,15 @@ export const updateReservation = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(updatedReservation);
+    return sendSuccess(res, updatedReservation);
   } catch (error) {
     console.error('Error updating reservation:', error);
-    res.status(500).json({ error: 'Failed to update reservation' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to update reservation',
+      ERROR_CODES.RESERVATION_UPDATE_FAILED
+    );
   }
 };
 
@@ -258,17 +365,26 @@ export const deleteReservation = async (req: Request, res: Response) => {
     });
 
     if (!reservation) {
-      return res.status(404).json({ error: 'Reservation not found' });
+      return sendError(
+        res,
+        HTTP_STATUS.NOT_FOUND,
+        'Reservation not found',
+        ERROR_CODES.RESERVATION_NOT_FOUND
+      );
     }
 
-    // Eliminar la reserva
     await prisma.reservation.delete({
       where: { id: parseInt(id) },
     });
 
-    res.status(204).send();
+    return res.status(HTTP_STATUS.NO_CONTENT).send();
   } catch (error) {
     console.error('Error deleting reservation:', error);
-    res.status(500).json({ error: 'Failed to delete reservation' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to delete reservation',
+      ERROR_CODES.RESERVATION_DELETE_FAILED
+    );
   }
 };

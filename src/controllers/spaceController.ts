@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../models';
+import { HTTP_STATUS } from '../utils/httpStatus';
+import { ERROR_CODES } from '../utils/errorCodes';
+import { sendError, sendSuccess } from '../utils/apiResponse';
 
 // Obtener todos los espacios
 export const getAllSpaces = async (req: Request, res: Response) => {
@@ -7,10 +10,15 @@ export const getAllSpaces = async (req: Request, res: Response) => {
     const spaces = await prisma.space.findMany({
       include: { place: true },
     });
-    res.status(200).json(spaces);
+    return sendSuccess(res, spaces);
   } catch (error) {
     console.error('Error fetching spaces:', error);
-    res.status(500).json({ error: 'Failed to fetch spaces' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch spaces',
+      ERROR_CODES.SPACE_FETCH_FAILED
+    );
   }
 };
 
@@ -24,13 +32,18 @@ export const getSpaceById = async (req: Request, res: Response) => {
     });
 
     if (!space) {
-      return res.status(404).json({ error: 'Space not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Space not found', ERROR_CODES.SPACE_NOT_FOUND);
     }
 
-    res.status(200).json(space);
+    return sendSuccess(res, space);
   } catch (error) {
     console.error('Error fetching space:', error);
-    res.status(500).json({ error: 'Failed to fetch space' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to fetch space',
+      ERROR_CODES.SPACE_FETCH_FAILED
+    );
   }
 };
 
@@ -40,7 +53,12 @@ export const createSpace = async (req: Request, res: Response) => {
     const { placeId, name, reference, capacity, description } = req.body;
 
     if (!placeId || !name || !capacity) {
-      return res.status(400).json({ error: 'PlaceId, name, and capacity are required' });
+      return sendError(
+        res,
+        HTTP_STATUS.BAD_REQUEST,
+        'PlaceId, name, and capacity are required',
+        ERROR_CODES.SPACE_MISSING_FIELDS
+      );
     }
 
     // Verificar si el lugar existe
@@ -49,7 +67,7 @@ export const createSpace = async (req: Request, res: Response) => {
     });
 
     if (!place) {
-      return res.status(404).json({ error: 'Place not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Place not found', ERROR_CODES.PLACE_NOT_FOUND);
     }
 
     const newSpace = await prisma.space.create({
@@ -62,10 +80,15 @@ export const createSpace = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(newSpace);
+    return sendSuccess(res, newSpace, HTTP_STATUS.CREATED);
   } catch (error) {
     console.error('Error creating space:', error);
-    res.status(500).json({ error: 'Failed to create space' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to create space',
+      ERROR_CODES.SPACE_CREATE_FAILED
+    );
   }
 };
 
@@ -75,23 +98,25 @@ export const updateSpace = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { placeId, name, reference, capacity, description } = req.body;
 
-    // Verificar si el espacio existe
     const space = await prisma.space.findUnique({
       where: { id: parseInt(id) },
     });
 
     if (!space) {
-      return res.status(404).json({ error: 'Space not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Space not found', ERROR_CODES.SPACE_NOT_FOUND);
     }
-
-    // Si se proporciona placeId, verificar si el lugar existe
     if (placeId) {
       const place = await prisma.place.findUnique({
         where: { id: placeId },
       });
 
       if (!place) {
-        return res.status(404).json({ error: 'Place not found' });
+        return sendError(
+          res,
+          HTTP_STATUS.NOT_FOUND,
+          'Place not found',
+          ERROR_CODES.PLACE_NOT_FOUND
+        );
       }
     }
 
@@ -106,10 +131,15 @@ export const updateSpace = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json(updatedSpace);
+    return sendSuccess(res, updatedSpace);
   } catch (error) {
     console.error('Error updating space:', error);
-    res.status(500).json({ error: 'Failed to update space' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to update space',
+      ERROR_CODES.SPACE_UPDATE_FAILED
+    );
   }
 };
 
@@ -118,23 +148,26 @@ export const deleteSpace = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Verificar si el espacio existe
     const space = await prisma.space.findUnique({
       where: { id: parseInt(id) },
     });
 
     if (!space) {
-      return res.status(404).json({ error: 'Space not found' });
+      return sendError(res, HTTP_STATUS.NOT_FOUND, 'Space not found', ERROR_CODES.SPACE_NOT_FOUND);
     }
 
-    // Eliminar el espacio
     await prisma.space.delete({
       where: { id: parseInt(id) },
     });
 
-    res.status(204).send();
+    return res.status(HTTP_STATUS.NO_CONTENT).send();
   } catch (error) {
     console.error('Error deleting space:', error);
-    res.status(500).json({ error: 'Failed to delete space' });
+    return sendError(
+      res,
+      HTTP_STATUS.INTERNAL_SERVER_ERROR,
+      'Failed to delete space',
+      ERROR_CODES.SPACE_DELETE_FAILED
+    );
   }
 };

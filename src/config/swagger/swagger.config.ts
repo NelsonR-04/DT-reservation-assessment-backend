@@ -58,10 +58,7 @@ const options: swaggerJsdoc.Options = {
       },
     ],
   },
-  apis: [
-    path.join(__dirname, './schemas/*.yaml'),
-    path.join(__dirname, './paths/*.yaml'),
-  ],
+  apis: [path.join(__dirname, './schemas/*.yaml'), path.join(__dirname, './paths/*.yaml')],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
